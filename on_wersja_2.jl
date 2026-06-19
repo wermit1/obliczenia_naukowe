@@ -48,7 +48,6 @@ function compute_accelerations(positions, masses, G, softening=0.0)
     end
     return acc
 end
-println("Funkcja przyspieszeń zdefiniowana.")
 
 function total_energy(positions, velocities, masses, G)
     N = length(masses)
@@ -63,7 +62,6 @@ function total_energy(positions, velocities, masses, G)
     end
     return Ek + Ep
 end
-println("Funkcja energii zdefiniowana.")
 
 function total_angular_momentum(positions, velocities, masses)
     L = zeros(3)
@@ -72,16 +70,7 @@ function total_angular_momentum(positions, velocities, masses)
     end
     return L
 end
-println("Funkcja momentu pędu zdefiniowana.")
 
-# ============================================
-# INTEGRATORY
-# ============================================
-
-function euler_step(r, v, masses, G, dt, softening=0.0)
-    a = compute_accelerations(r, masses, G, softening)
-    return r + v*dt, v + a*dt
-end
 
 function rk4_step(r, v, masses, G, dt, softening=0.0)
     a1 = compute_accelerations(r, masses, G, softening)
@@ -107,45 +96,7 @@ function verlet_step(r, v, masses, G, dt, softening=0.0)
     return r_new, v_new
 end
 
-function leapfrog_step(r, v, masses, G, dt, softening=0.0)
-    a = compute_accelerations(r, masses, G, softening)
-    v_half = v + 0.5*dt*a
-    r_new = r + dt*v_half
-    a_new = compute_accelerations(r_new, masses, G, softening)
-    v_new = v_half + 0.5*dt*a_new
-    return r_new, v_new
-end
-
-function forest_ruth_step(r, v, masses, G, dt, softening=0.0)
-    c1 = 0.6756035959798288
-    c2 = -0.1756035959798288
-    c3 = -0.1756035959798288
-    c4 = 0.6756035959798288
-    d1 = 1.3512071919596576
-    d2 = -0.7024143839193152
-    d3 = -0.7024143839193152
-    d4 = 1.3512071919596576
-    
-    a = compute_accelerations(r, masses, G, softening)
-    v1 = v + c1 * dt * a
-    r1 = r + d1 * dt * v1
-    a1 = compute_accelerations(r1, masses, G, softening)
-    v2 = v1 + c2 * dt * a1
-    r2 = r1 + d2 * dt * v2
-    a2 = compute_accelerations(r2, masses, G, softening)
-    v3 = v2 + c3 * dt * a2
-    r3 = r2 + d3 * dt * v3
-    a3 = compute_accelerations(r3, masses, G, softening)
-    v_new = v3 + c4 * dt * a3
-    r_new = r3 + d4 * dt * v_new
-    return r_new, v_new
-end
-
-println("Wszystkie integratory zdefiniowane (Euler, RK4, Verlet, Leapfrog, Forest-Ruth).")
-
-# ============================================
 # SYMULACJA
-# ============================================
 
 function run_simulation(integrator, name, r0, v0, masses, G, dt, n_steps, softening=0.0)
     N = length(masses)
@@ -173,12 +124,8 @@ function run_simulation(integrator, name, r0, v0, masses, G, dt, n_steps, soften
     println("Symulacja $name zakończona. dt=$dt, n_steps=$n_steps")
     return (r=history_r, v=history_v, E=history_E, L=history_L, t=(0:n_steps)*dt, name=name)
 end
-println("Funkcja run_simulation zdefiniowana.")
 
-# ============================================
 # WARUNKI POCZĄTKOWE
-# ============================================
-
 masses = [1.0, 3.003e-6, 3.227e-7, 4.731e-7, 2.528e-7]
 
 positions0 = [
@@ -197,22 +144,17 @@ velocities0 = [
     0.0 0.02788 -0.0075
 ]'
 
-println("Warunki początkowe zdefiniowane.")
-
-# ============================================
 # 1. KATASTROFA - za duży dt
-# ============================================
-println("\n=== 1. KATASTROFA NUMERYCZNA: za duży dt ===")
+println("\n 1. KATASTROFA NUMERYCZNA: za duży dt ")
 res_bad = run_simulation(rk4_step, "RK4 (złe dt)", positions0, velocities0, masses, G, 10.0, 500)
 
-p1 = plot(res_bad.E .- res_bad.E[1], title="KATASTROFA NUMERYCZNA - dt = 10 dni", xlabel="Krok", ylabel="ΔE", label="Energia rośnie", linewidth=2)
+p1 = plot(res_bad.E .- res_bad.E[1], title="KATASTROFA NUMERYCZNA - dt = 10 dni", xlabel="Krok", ylabel="delta E", label="Energia rośnie", linewidth=2)
 savefig(p1, joinpath(results_dir, "katastrofa_dt10.png"))
 println("Zapisano: katastrofa_dt10.png")
 
-# ============================================
 # 2. PORÓWNANIE RK4 vs VERLET
-# ============================================
-println("\n=== 2. PORÓWNANIE RK4 vs VERLET ===")
+
+println("\n 2. PORÓWNANIE RK4 vs VERLET")
 dt_good = 0.5
 n_steps_good = 2000
 
@@ -229,10 +171,9 @@ ylabel!(p2, "Względna zmiana energii")
 savefig(p2, joinpath(results_dir, "energia_RK4_vs_Verlet.png"))
 println("Zapisano: energia_RK4_vs_Verlet.png")
 
-# ============================================
+
 # 3. ANIMACJA ORBIT 2D
-# ============================================
-println("\n=== 3. ANIMACJA ORBIT 2D ===")
+println("\n 3. ANIMACJA ORBIT 2D ")
 
 anim = @animate for step in 1:50:n_steps_good+1
     plot(title="Orbity planet (RK4)", xlim=(-1.8, 1.8), ylim=(-1.8, 1.8), aspect_ratio=:equal)
@@ -246,24 +187,19 @@ end
 gif(anim, joinpath(results_dir, "orbity_planet.gif"), fps=20)
 println("Zapisano: orbity_planet.gif")
 
-# ============================================
 # 4. MOMENT PĘDU
-# ============================================
-println("\n=== 4. MOMENT PĘDU ===")
+println("\n 4. MOMENT PĘDU ")
 
 p4 = plot(res_RK4.t, (res_RK4.L .- res_RK4.L[1])./res_RK4.L[1], label="RK4", title="Zachowanie momentu pędu")
 plot!(p4, res_Verlet.t, (res_Verlet.L .- res_Verlet.L[1])./res_Verlet.L[1], label="Verlet", linewidth=2)
 xlabel!(p4, "Czas [dni]")
-ylabel!(p4, "Δ|L|/|L₀|")
+ylabel!(p4, "delta |L|/|L_0|")
 savefig(p4, joinpath(results_dir, "moment_pedu.png"))
 println("Zapisano: moment_pedu.png")
 
-# ============================================
 # 5. FFT SPEKTRUM MOCY
-# ============================================
-println("\n=== 5. SPEKTRUM MOCY FFT ===")
+println("\n 5. SPEKTRUM MOCY FFT ")
 
-# Dłuższa symulacja tylko do FFT
 dt_fft = 0.5
 years_fft = 20
 n_steps_fft = Int(round(years_fft * 365.25 / dt_fft))
@@ -286,10 +222,8 @@ y_earth = [res_fft.r[2, 2, i] - res_fft.r[2, 1, i] for i in 1:n_steps_fft+1]
 # Sygnał zespolony orbity: x + i*y
 z_earth = complex.(x_earth, y_earth)
 
-# Usuwamy średnią, żeby składowa stała nie dominowała w widmie
 z_earth = z_earth .- mean(z_earth)
 
-# Okno Hanna, żeby zmniejszyć rozmycie widma
 N = length(z_earth)
 window = 0.5 .- 0.5 .* cos.(2π .* (0:N-1) ./ (N-1))
 z_windowed = z_earth .* window
@@ -298,14 +232,10 @@ z_windowed = z_earth .* window
 fs = 1 / dt_fft
 freqs = fftfreq(N, fs)
 power = abs.(fft(z_windowed)).^2
-
-# Bierzemy tylko dodatnie częstotliwości w interesującym zakresie
 idx = (freqs .> 0) .& (freqs .< 0.01)
 
 freq_plot = freqs[idx]
 power_plot = power[idx]
-
-# Sprawdzenie największego piku
 freq_peak = freq_plot[argmax(power_plot)]
 period_peak = 1 / freq_peak
 
@@ -313,7 +243,6 @@ println("Największy pik: f = $freq_peak 1/dzień")
 println("Odpowiadający okres: T = $period_peak dni")
 println("Częstotliwość roczna: $(1/365.25) 1/dzień")
 
-# Wykres w tym samym stylu co wcześniej
 p5 = plot(
     freq_plot,
     power_plot,
@@ -324,7 +253,7 @@ p5 = plot(
 
 vline!(
     [1/365.25],
-    label="1 rok⁻¹",
+    label="1 rok^-1",
     linestyle=:dash,
     linewidth=2
 )
@@ -336,10 +265,8 @@ xlims!(0, 0.01)
 savefig(p5, joinpath(results_dir, "spektrum_mocy.png"))
 println("Zapisano: spektrum_mocy.png")
 
-# ============================================
 # 6. SOFTENING
-# ============================================
-println("\n=== 6. SOFTENING ===")
+println("\n 6. SOFTENING")
 
 softening_vals = [0.0, 0.001, 0.01, 0.1]
 soft_results = []
@@ -363,26 +290,22 @@ for i in 2:4
     plot!(p6, soft_results[i] .- soft_results[i][1], label="soft=$(softening_vals[i])")
 end
 xlabel!("Krok")
-ylabel!("ΔE")
+ylabel!("delta E")
 savefig(p6, joinpath(results_dir, "softening.png"))
 println("Zapisano: softening.png")
 
-# ============================================
 # 7. KATASTROFA - bliski przelot
-# ============================================
-println("\n=== 7. KATASTROFA: bliski przelot ===")
+println("\n 7. KATASTROFA: bliski przelot ")
 positions_close = copy(positions0)
 positions_close[:, 3] = [0.1, 0.0, 0.0]
 res_close = run_simulation(rk4_step, "close", positions_close, velocities0, masses, G, 0.5, 1000)
 
-p7 = plot(res_close.E .- res_close.E[1], title="Katastrofa: bliski przelot", xlabel="Krok", ylabel="ΔE", label="Energia wybucha", linewidth=2)
+p7 = plot(res_close.E .- res_close.E[1], title="Katastrofa: bliski przelot", xlabel="Krok", ylabel="delta E", label="Energia wybucha", linewidth=2)
 savefig(p7, joinpath(results_dir, "katastrofa_bliski_przelot.png"))
 println("Zapisano: katastrofa_bliski_przelot.png")
 
-# ============================================
 # 8. ANALIZA BŁĘDU W ZALEŻNOŚCI OD DT
-# ============================================
-println("\n=== 8. ANALIZA BŁĘDU W ZALEŻNOŚCI OD DT ===")
+println("\n 8. ANALIZA BŁĘDU W ZALEŻNOŚCI OD DT ")
 
 dt_values = [0.1, 0.25, 0.5, 1.0, 2.0, 5.0]
 errors_rk4 = Float64[]
@@ -405,15 +328,13 @@ end
 
 p8 = plot(dt_values, errors_rk4, marker=:circle, label="RK4", linewidth=2, 
           title="Błąd energii po 1 roku symulacji", 
-          xlabel="Krok czasowy dt [dni]", ylabel="|ΔE/E₀|", yscale=:log10)
+          xlabel="Krok czasowy dt [dni]", ylabel="|delta E/E_0|", yscale=:log10)
 plot!(p8, dt_values, errors_verlet, marker=:square, label="Verlet", linewidth=2, yscale=:log10)
 savefig(p8, joinpath(results_dir, "error_vs_dt.png"))
 println("Zapisano: error_vs_dt.png")
 
-# ============================================
 # 9. BENCHMARK
-# ============================================
-println("\n=== 9. BENCHMARK ===")
+println("\n 9. BENCHMARK ")
 r_test = copy(positions0)
 v_test = copy(velocities0)
 println("Benchmark Verleta (1000 kroków):")
@@ -425,17 +346,31 @@ open(joinpath(results_dir, "benchmark.txt"), "w") do f
 end
 println("Zapisano: benchmark.txt")
 
-# ============================================
 # 10. ZAPIS DANYCH DO CSV
-# ============================================
 writedlm(joinpath(results_dir, "energia_RK4.csv"), [res_RK4.t res_RK4.E], ',')
 writedlm(joinpath(results_dir, "energia_Verlet.csv"), [res_Verlet.t res_Verlet.E], ',')
-println("Zapisano CSV")
 
-# ============================================
+# 10b. DRYF ENERGII DLA RK4 - DŁUGI OKRES
+println("\n 10b. DRYF ENERGII DLA RK4 - DŁUGI OKRES")
+
+dt_long = 0.5
+n_steps_long = 500000 
+
+res_RK4_long = run_simulation(rk4_step, "RK4_long", positions0, velocities0, masses, G, dt_long, n_steps_long)
+
+E0_long = res_RK4_long.E[1]
+
+plot10 = plot(res_RK4_long.t, res_RK4_long.E ./ E0_long .- 1, 
+              label="RK4", linewidth=2, 
+              title="Dryf energii dla RK4 - 250 000 dni")
+xlabel!(plot10, "Czas [dni]")
+ylabel!(plot10, "Względna zmiana energii")
+display(plot10)
+savefig(plot10, joinpath(results_dir, "dryf_RK4_dlugi_okres.png"))
+println("Zapisano: $(joinpath(results_dir, "dryf_RK4_dlugi_okres.png"))")
+
 # 11. WYKŁADNIK LAPUNOWA
-# ============================================
-println("\n=== 11. WYKŁADNIK LAPUNOWA ===")
+println("\n 11. WYKŁADNIK LAPUNOWA ")
 
 function lyapunov_exponent_simple(dt=1.0, total_time=5000.0, eps=1e-8)
     r_sun = [0.0, 0.0, 0.0]
@@ -489,7 +424,7 @@ function lyapunov_exponent_simple(dt=1.0, total_time=5000.0, eps=1e-8)
     p11 = plot(times, log_d, label="log(odległość)", title="Wykładnik Lapunowa - chaos")
     if lambda_val != 0.0
         plot!(p11, times, lambda_val.*times .+ (log_d[end] - lambda_val*times[end]), 
-              label="λ=$(round(lambda_val, digits=6))", linestyle=:dash)
+              label="lambda=$(round(lambda_val, digits=6))", linestyle=:dash)
     end
     xlabel!("Czas [dni]")
     ylabel!("ln(odległość)")
@@ -500,15 +435,14 @@ function lyapunov_exponent_simple(dt=1.0, total_time=5000.0, eps=1e-8)
 end
 
 lambda = lyapunov_exponent_simple(1.0, 5000.0, 1e-8)
-println("Wykładnik Lapunowa ≈ $lambda 1/dzień")
+println("Wykładnik Lapunowa ~ $lambda 1/dzień")
 if lambda > 1e-8
-    println("Czas Lapunowa ≈ $(round(1/lambda, digits=1)) dni ≈ $(round(1/lambda/365.25, digits=2)) lat")
+    println("Czas Lapunowa ~ $(round(1/lambda, digits=1)) dni ~ $(round(1/lambda/365.25, digits=2)) lat")
 end
 
-# ============================================
-# 12. MAPA POINCARÉGO
-# ============================================
-println("\n=== 12. MAPA POINCARÉGO ===")
+# 12. MAPA POINCAREGO
+
+println("\n 12. MAPA POINCAREGO")
 
 function poincare_map(n_points=300, dt=0.5)
     m_sun = 1.0
@@ -551,7 +485,7 @@ function poincare_map(n_points=300, dt=0.5)
     
     if length(points_r) > 0
         p12 = scatter(points_r, points_pr, markersize=2, alpha=0.5, 
-                  title="Mapa Poincarégo - układ Ziemia+Jowisz",
+                  title="Mapa Poincarego - układ Ziemia+Jowisz",
                   xlabel="r [AU]", ylabel="v_r [AU/dzień]", legend=false)
         savefig(p12, joinpath(results_dir, "poincare_map.png"))
         println("Zapisano: poincare_map.png")
@@ -561,18 +495,15 @@ end
 
 poincare_map(300, 0.5)
 
-# ============================================
-# 13. ANIMACJA 3D (Plots, bez GLMakie)
-# ============================================
-println("\n=== 13. ANIMACJA 3D (Plots) ===")
 
-# Przygotowanie danych do animacji 3D
+# 13. ANIMACJA 3D
+println("\n 13. ANIMACJA 3D")
+
 positions_3d = res_RK4.r
 n_frames = size(positions_3d, 3)
 frames_3d = 1:50:n_frames
 
 anim3d = @animate for frame in frames_3d
-    # Pobierz pozycje planet w danej klatce
     x_sun = 0
     y_sun = 0
     z_sun = 0
@@ -613,42 +544,21 @@ end
 gif(anim3d, joinpath(results_dir, "orbity_3d.gif"), fps=20)
 println("Zapisano: orbity_3d.gif (animacja 3D)")
 
-# ============================================
 # 14. TABELA PORÓWNAWCZA
-# ============================================
-println("\n" * "="^70)
-println("TABELA PORÓWNAWCZA INTEGRATORÓW")
+println("TABELA PORÓWNAWCZA")
 println("="^70)
 println("| Metoda       | Rząd | Symplektyczna | Zachowanie energii | Uwagi                     |")
 println("|--------------|------|---------------|--------------------|---------------------------|")
-println("| Euler        | 1    | Nie           | ❌ Katastrofa      | Nie używać                |")
-println("| RK4          | 4    | Nie           | ⚠️ Dryf           | Krótkie symulacje         |")
-println("| Verlet       | 2    | ✅ Tak         | ✅ Stabilna        | Długie symulacje ★★★      |")
-println("| Leapfrog     | 2    | ✅ Tak         | ✅ Stabilna        | Astrofizyka               |")
-println("| Forest-Ruth  | 4    | ✅ Tak         | ✅✅ Bardzo dobra  | Wysoka precyzja           |")
-println("="^70)
+println("| RK4          | 4    | Nie           | Dryf           | Krótkie symulacje         |")
+println("| Verlet       | 2    | Tak         | Stabilna        | Długie symulacje     |")
 
-# ============================================
-# 15. PRAKTYCZNE ZNACZENIE
-# ============================================
-println("\n" * "="^70)
-println("PRAKTYCZNE ZNACZENIE")
-println("="^70)
-println("1. Misje kosmiczne (NASA/ESA) – asysty grawitacyjne")
-println("2. Odkrywanie egzoplanet – symulacje stabilności")
-println("3. Mechanika nieba – przewidywanie orbit")
-println("4. Astrofizyka – symulacje gromad galaktyk")
-println("="^70)
 
-# ============================================
-# 16. PODSUMOWANIE PLIKÓW
-# ============================================
-println("\n" * "="^70)
+
+
 println("WSZYSTKIE WYNIKI ZAPISANO W FOLDERZE:")
 println("   $results_dir")
-println("="^70)
+
 println("Zawartość folderu:")
 for file in readdir(results_dir)
     println("   - $file")
 end
-println("\n=== WSZYSTKO GOTOWE ===")
