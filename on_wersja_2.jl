@@ -350,7 +350,7 @@ println("Zapisano: benchmark.txt")
 writedlm(joinpath(results_dir, "energia_RK4.csv"), [res_RK4.t res_RK4.E], ',')
 writedlm(joinpath(results_dir, "energia_Verlet.csv"), [res_Verlet.t res_Verlet.E], ',')
 
-# 10b. DRYF ENERGII DLA RK4 - DŁUGI OKRES
+# 10b. DRYF ENERGII DLA RK4 -DŁUGI OKRES
 println("\n 10b. DRYF ENERGII DLA RK4 - DŁUGI OKRES")
 
 dt_long = 0.5
@@ -557,8 +557,6 @@ println("| Verlet       | 2    | Tak         | Stabilna        | Długie symulac
 
 println("WSZYSTKIE WYNIKI ZAPISANO W FOLDERZE:")
 println("   $results_dir")
-
-println("Zawartość folderu:")
 for file in readdir(results_dir)
     println("   - $file")
 end
