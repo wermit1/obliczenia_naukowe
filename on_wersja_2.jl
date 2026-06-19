@@ -15,9 +15,7 @@ ENV["GKSwstype"] = "nul"
 
 println("Pakiety załadowane.")
 
-# ============================================
 # FOLDER NA WYNIKI
-# ============================================
 results_dir = joinpath(@__DIR__, "wyniki_projektu1")
 if !isdir(results_dir)
     mkdir(results_dir)
@@ -30,9 +28,7 @@ end
 const G = 0.000295912208
 println("G = $G")
 
-# ============================================
 # FUNKCJE PODSTAWOWE
-# ============================================
 
 function compute_accelerations(positions, masses, G, softening=0.0)
     N = length(masses)
@@ -195,7 +191,7 @@ positions0 = [
 
 velocities0 = [
     0.0 0.0 0.0;
-    -0.005018 0.017202 0.0;
+    -0.000088 0.017202 0.0;
     0.0 0.01397 0.0012;
     0.0 0.02078 -0.0008;
     0.0 0.02788 -0.0075
@@ -267,17 +263,76 @@ println("Zapisano: moment_pedu.png")
 # ============================================
 println("\n=== 5. SPEKTRUM MOCY FFT ===")
 
-x_earth = [res_RK4.r[1, 2, i] for i in 1:n_steps_good+1]
-fs = 1 / dt_good
-freqs = fftfreq(length(x_earth), fs)
-power = abs.(fft(x_earth)).^2
-idx = freqs .> 0
+# Dłuższa symulacja tylko do FFT
+dt_fft = 0.5
+years_fft = 20
+n_steps_fft = Int(round(years_fft * 365.25 / dt_fft))
 
-p5 = plot(freqs[idx], power[idx], linewidth=1, title="Spektrum mocy – orbita Ziemi")
-vline!([1/365.25], label="1 rok⁻¹", linestyle=:dash, linewidth=2)
+res_fft = run_simulation(
+    verlet_step,
+    "Verlet FFT",
+    positions0,
+    velocities0,
+    masses,
+    G,
+    dt_fft,
+    n_steps_fft
+)
+
+# Położenie Ziemi względem Słońca
+x_earth = [res_fft.r[1, 2, i] - res_fft.r[1, 1, i] for i in 1:n_steps_fft+1]
+y_earth = [res_fft.r[2, 2, i] - res_fft.r[2, 1, i] for i in 1:n_steps_fft+1]
+
+# Sygnał zespolony orbity: x + i*y
+z_earth = complex.(x_earth, y_earth)
+
+# Usuwamy średnią, żeby składowa stała nie dominowała w widmie
+z_earth = z_earth .- mean(z_earth)
+
+# Okno Hanna, żeby zmniejszyć rozmycie widma
+N = length(z_earth)
+window = 0.5 .- 0.5 .* cos.(2π .* (0:N-1) ./ (N-1))
+z_windowed = z_earth .* window
+
+# FFT
+fs = 1 / dt_fft
+freqs = fftfreq(N, fs)
+power = abs.(fft(z_windowed)).^2
+
+# Bierzemy tylko dodatnie częstotliwości w interesującym zakresie
+idx = (freqs .> 0) .& (freqs .< 0.01)
+
+freq_plot = freqs[idx]
+power_plot = power[idx]
+
+# Sprawdzenie największego piku
+freq_peak = freq_plot[argmax(power_plot)]
+period_peak = 1 / freq_peak
+
+println("Największy pik: f = $freq_peak 1/dzień")
+println("Odpowiadający okres: T = $period_peak dni")
+println("Częstotliwość roczna: $(1/365.25) 1/dzień")
+
+# Wykres w tym samym stylu co wcześniej
+p5 = plot(
+    freq_plot,
+    power_plot,
+    linewidth=1,
+    title="Spektrum mocy – orbita Ziemi",
+    label="y1"
+)
+
+vline!(
+    [1/365.25],
+    label="1 rok⁻¹",
+    linestyle=:dash,
+    linewidth=2
+)
+
 xlabel!("Częstotliwość [1/dzień]")
 ylabel!("Moc")
 xlims!(0, 0.01)
+
 savefig(p5, joinpath(results_dir, "spektrum_mocy.png"))
 println("Zapisano: spektrum_mocy.png")
 
